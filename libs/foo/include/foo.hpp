@@ -1,10 +1,12 @@
 #pragma once
 
+#include <string>
+
 namespace foo {
 
 class Foo {
 public:
-	auto hello() -> void;
+	static auto hello() -> std::string;
 };
 
 }

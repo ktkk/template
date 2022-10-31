@@ -2,6 +2,6 @@
 
 using namespace foo;
 
-auto Foo::hello() -> void {
-	return;
+auto Foo::hello() -> std::string {
+	return "Hello, foo!\n";
 }
