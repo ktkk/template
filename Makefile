@@ -108,28 +108,28 @@ all: $(BUILD_DIR)/$(LIB)
 endif
 
 $(BUILD_DIR):
-	@tput setaf 1 ; echo -n "[MKDIR] " ; tput sgr0 ; echo -e "Creating $(BUILD_DIR)"
+	@tput setaf 1 ; echo -n "[MKDIR] " ; tput sgr0 ; echo -n "Creating $(BUILD_DIR)\n"
 	mkdir -p $(BUILD_DIR)
 
 $(LIBS_DIR)/*/$(BUILD_DIR)/*.a:
-	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo -e "Building libs"
+	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo -n "Building libs\n"
 	# TODO: Make libraries more generic
 	$(MAKE) -C $(LIBS_FOO)
 	$(MAKE) -C $(LIBS_BAR)
 
 ifdef IS_EXE
 $(BUILD_DIR)/$(EXE): $(OBJS) | $(BUILD_DIR) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a
-	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo -e "Linking objects"
+	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo -n "Linking objects\n"
 	$(LD) $(LDFLAGS) $(filter %.o,$^) -o $@
 endif
 ifdef IS_LIB
 $(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a
-	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo -e "Archiving objects"
+	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo -n "Archiving objects\n"
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 endif
 
 %.o: %.cpp
-	@tput setaf 1 ; echo -n "[CC] " ; tput sgr0 ; echo -e "Building sources"
+	@tput setaf 1 ; echo -n "[CC] " ; tput sgr0 ; echo -n "Building sources\n"
 	$(CC) -o $@ -c $< $(CCFLAGS)
 
 clean:
@@ -145,7 +145,7 @@ run: $(BUILD_DIR)/$(EXE)
 endif
 ifdef IS_LIB
 run:
-	@echo "Not an executable, exiting"
+	@echo -n "Not an executable, exiting\n"
 endif
 
 clangd: clean
