@@ -113,7 +113,7 @@ $(BUILD_DIR):
 
 $(LIBS_DIR)/*/$(BUILD_DIR)/*.a:
 	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo -n "Building libs\n"
-	# TODO: Make libraries more generic
+	@# TODO: Make libraries more generic
 	$(MAKE) -C $(LIBS_FOO)
 	$(MAKE) -C $(LIBS_BAR)
 
@@ -135,7 +135,7 @@ endif
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(OBJS)
-	# TODO: Make libraries more generic
+	@# TODO: Make libraries more generic
 	$(MAKE) -C $(LIBS_FOO) clean
 	$(MAKE) -C $(LIBS_BAR) clean
 
