@@ -106,10 +106,10 @@ $(LIBS_DIR)/*/$(BUILD_DIR)/*.a:
 ifdef IS_EXE
 $(BUILD_DIR)/$(EXE): $(OBJS) | $(BUILD_DIR) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a
 	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo -n "Linking objects\n"
-	$(LD) $(LDFLAGS) $(filter %.o,$^) -o $@
+	$(LD) $(filter %.o,$^) $(LDFLAGS) -o $@
 endif
 ifdef IS_LIB
-$(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a
+$(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR)
 	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo -n "Archiving objects\n"
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 endif

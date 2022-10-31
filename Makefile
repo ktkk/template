@@ -78,8 +78,10 @@ LDFLAGS  = -lm
 LDFLAGS += -lstdc++
 LDFLAGS += $(INCFLAGS) # append include flags
 # TODO: Make libraries more generic
-LDFLAGS += $(LIBS_DIR)/foo/$(BUILD_DIR)/lib$(FOO).a
-LDFLAGS += $(LIBS_DIR)/bar/$(BUILD_DIR)/lib$(BAR).a
+LDFLAGS += -L$(LIBS_DIR)/$(FOO)/$(BUILD_DIR)
+LDFLAGS += -L$(LIBS_DIR)/$(BAR)/$(BUILD_DIR)
+LDFLAGS += -l$(FOO)
+LDFLAGS += -l$(BAR)
 
 # Archiver flags
 ARFLAGS = rcs
@@ -118,12 +120,12 @@ $(LIBS_DIR)/*/$(BUILD_DIR)/*.a:
 	$(MAKE) -C $(LIBS_BAR)
 
 ifdef IS_EXE
-$(BUILD_DIR)/$(EXE): $(OBJS) | $(BUILD_DIR) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a
+$(BUILD_DIR)/$(EXE): $(OBJS) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a | $(BUILD_DIR)
 	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo -n "Linking objects\n"
-	$(LD) $(LDFLAGS) $(filter %.o,$^) -o $@
+	$(LD) $(filter %.o,$^) $(LDFLAGS) -o $@
 endif
 ifdef IS_LIB
-$(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a
+$(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR)
 	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo -n "Archiving objects\n"
 	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
 endif
