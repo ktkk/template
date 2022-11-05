@@ -52,17 +52,15 @@ BUILD_DIR   = build
 INCLUDE_DIR = include
 
 # Libraries
-# TODO: Make libraries more generic
-FOO = foo
-BAR = bar
-LIBS_FOO = $(LIBS_DIR)/$(FOO)
-LIBS_BAR = $(LIBS_DIR)/$(BAR)
+LIBS  = foo
+LIBS += bar
+LIBS_STATIC = $(foreach _LIB,$(LIBS), \
+				$(LIBS_DIR)/$(_LIB)/$(BUILD_DIR)/lib$(_LIB).a)
 
 # Include flags
 INCFLAGS  = -I$(INCLUDE_DIR)
-# TODO: Make libraries more generic
-INCFLAGS += -I$(LIBS_FOO)/$(INCLUDE_DIR)
-INCFLAGS += -I$(LIBS_BAR)/$(INCLUDE_DIR)
+INCFLAGS += $(foreach _LIB,$(LIBS), \
+				-I$(LIBS_DIR)/$(_LIB)/$(INCLUDE_DIR))
 
 # Compiler flags
 CCFLAGS  = -std=c++20
@@ -76,12 +74,9 @@ CCFLAGS += $(INCFLAGS) # append include flags
 # Linker flags
 LDFLAGS  = -lm
 LDFLAGS += -lstdc++
+LDFLAGS += $(foreach _LIB,$(LIBS), \
+			-L$(LIBS_DIR)/$(_LIB)/$(BUILD_DIR) -l$(_LIB))
 LDFLAGS += $(INCFLAGS) # append include flags
-# TODO: Make libraries more generic
-LDFLAGS += -L$(LIBS_DIR)/$(FOO)/$(BUILD_DIR)
-LDFLAGS += -L$(LIBS_DIR)/$(BAR)/$(BUILD_DIR)
-LDFLAGS += -l$(FOO)
-LDFLAGS += -l$(BAR)
 
 # Archiver flags
 ARFLAGS = rcs
@@ -100,6 +95,17 @@ endif
 SRCS = $(shell find $(SRC_DIR) -name "*.cpp")
 OBJS = $(SRCS:.cpp=.o)
 
+# Functions
+define LIB_recipe =
+$$(LIBS_DIR)/$(1)/$$(BUILD_DIR)/lib$(1).a: $$(LIBS_DIR)/$(1)/$$(shell make -C $$(LIBS_DIR)/$(1) print-SRCS -s)
+	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo "Building library $(1)"
+	$$(MAKE) -C $$(LIBS_DIR)/$(1)
+endef
+
+define LIB_clean =
+$(MAKE) -C $(LIBS_DIR)/$(1) clean;
+endef
+
 .PHONY: clean run clangd
 
 ifdef IS_EXE
@@ -110,36 +116,30 @@ all: $(BUILD_DIR)/$(LIB)
 endif
 
 $(BUILD_DIR):
-	@tput setaf 1 ; echo -n "[MKDIR] " ; tput sgr0 ; echo -n "Creating $(BUILD_DIR)\n"
+	@tput setaf 1 ; echo -n "[MKDIR] " ; tput sgr0 ; echo "Creating $(BUILD_DIR)"
 	mkdir -p $(BUILD_DIR)
 
-$(LIBS_DIR)/*/$(BUILD_DIR)/*.a:
-	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo -n "Building libs\n"
-	@# TODO: Make libraries more generic
-	$(MAKE) -C $(LIBS_FOO)
-	$(MAKE) -C $(LIBS_BAR)
+$(foreach _LIB,$(LIBS),$(eval $(call LIB_recipe,$(_LIB))))
 
 ifdef IS_EXE
-$(BUILD_DIR)/$(EXE): $(OBJS) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a | $(BUILD_DIR)
-	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo -n "Linking objects\n"
+$(BUILD_DIR)/$(EXE): $(OBJS) $(LIBS_STATIC) | $(BUILD_DIR)
+	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo "Linking objects"
 	$(LD) $(filter %.o,$^) $(LDFLAGS) -o $@
 endif
 ifdef IS_LIB
 $(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR)
-	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo -n "Archiving objects\n"
-	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
+	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo "Archiving objects"
+	$(AR) $(ARFLAGS) $@ $^
 endif
 
 %.o: %.cpp
-	@tput setaf 1 ; echo -n "[CC] " ; tput sgr0 ; echo -n "Building sources\n"
+	@tput setaf 1 ; echo -n "[CC] " ; tput sgr0 ; echo "Building sources"
 	$(CC) -o $@ -c $< $(CCFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(OBJS)
-	@# TODO: Make libraries more generic
-	$(MAKE) -C $(LIBS_FOO) clean
-	$(MAKE) -C $(LIBS_BAR) clean
+	$(foreach _LIB,$(LIBS),$(call LIB_clean,$(_LIB)))
 
 ifdef IS_EXE
 run: $(BUILD_DIR)/$(EXE)
@@ -147,7 +147,7 @@ run: $(BUILD_DIR)/$(EXE)
 endif
 ifdef IS_LIB
 run:
-	@echo -n "Not an executable, exiting\n"
+	@echo "Not an executable, exiting"
 endif
 
 clangd: clean

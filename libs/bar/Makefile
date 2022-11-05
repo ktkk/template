@@ -52,9 +52,14 @@ BUILD_DIR   = build
 INCLUDE_DIR = include
 
 # Libraries
+LIBS  =
+LIBS_STATIC = $(foreach _LIB,$(LIBS), \
+				$(LIBS_DIR)/$(_LIB)/$(BUILD_DIR)/lib$(_LIB).a)
 
 # Include flags
 INCFLAGS  = -I$(INCLUDE_DIR)
+INCFLAGS += $(foreach _LIB,$(LIBS), \
+				-I$(LIBS_DIR)/$(_LIB)/$(INCLUDE_DIR))
 
 # Compiler flags
 CCFLAGS  = -std=c++20
@@ -68,6 +73,8 @@ CCFLAGS += $(INCFLAGS) # append include flags
 # Linker flags
 LDFLAGS  = -lm
 LDFLAGS += -lstdc++
+LDFLAGS += $(foreach _LIB,$(LIBS), \
+			-L$(LIBS_DIR)/$(_LIB)/$(BUILD_DIR) -l$(_LIB))
 LDFLAGS += $(INCFLAGS) # append include flags
 
 # Archiver flags
@@ -87,6 +94,17 @@ endif
 SRCS = $(shell find $(SRC_DIR) -name "*.cpp")
 OBJS = $(SRCS:.cpp=.o)
 
+# Functions
+define LIB_recipe =
+$$(LIBS_DIR)/$(1)/$$(BUILD_DIR)/lib$(1).a: $$(LIBS_DIR)/$(1)/$$(shell make -C $$(LIBS_DIR)/$(1) print-SRCS -s)
+	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo "Building library $(1)"
+	$$(MAKE) -C $$(LIBS_DIR)/$(1)
+endef
+
+define LIB_clean =
+$(MAKE) -C $(LIBS_DIR)/$(1) clean;
+endef
+
 .PHONY: clean run clangd
 
 ifdef IS_EXE
@@ -100,18 +118,17 @@ $(BUILD_DIR):
 	@tput setaf 1 ; echo -n "[MKDIR] " ; tput sgr0 ; echo -n "Creating $(BUILD_DIR)\n"
 	mkdir -p $(BUILD_DIR)
 
-$(LIBS_DIR)/*/$(BUILD_DIR)/*.a:
-	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo -n "Building libs\n"
+$(foreach _LIB,$(LIBS),$(eval $(call LIB_recipe,$(_LIB))))
 
 ifdef IS_EXE
-$(BUILD_DIR)/$(EXE): $(OBJS) | $(BUILD_DIR) $(LIBS_DIR)/*/$(BUILD_DIR)/*.a
+$(BUILD_DIR)/$(EXE): $(OBJS) $(LIBS_STATIC) | $(BUILD_DIR)
 	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo -n "Linking objects\n"
 	$(LD) $(filter %.o,$^) $(LDFLAGS) -o $@
 endif
 ifdef IS_LIB
 $(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR)
 	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo -n "Archiving objects\n"
-	$(AR) $(ARFLAGS) $@ $(filter %.o,$^)
+	$(AR) $(ARFLAGS) $@ $^
 endif
 
 %.o: %.cpp
@@ -121,6 +138,7 @@ endif
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(OBJS)
+	$(foreach _LIB,$(LIBS),$(call LIB_clean,$(_LIB)))
 
 ifdef IS_EXE
 run: $(BUILD_DIR)/$(EXE)
