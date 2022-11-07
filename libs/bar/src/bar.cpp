@@ -2,6 +2,7 @@
 
 using namespace bar;
 
-auto Bar::hello() -> std::string {
-	return "Hello, bar!\n";
+auto Bar::hello() -> std::string
+{
+    return "Hello, bar!\n";
 }
