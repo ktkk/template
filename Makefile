@@ -25,6 +25,8 @@ AR = ar
 # Utilities
 print-%: ; @echo $($*) # Print variables
 
+PRETTY_PRINT =
+
 # Standard file structure
 # A project structure like this is expected:
 #
@@ -98,7 +100,9 @@ OBJS = $(SRCS:.cpp=.o)
 # Functions
 define LIB_recipe =
 $$(LIBS_DIR)/$(1)/$$(BUILD_DIR)/lib$(1).a: $$(LIBS_DIR)/$(1)/$$(shell make -C $$(LIBS_DIR)/$(1) print-SRCS -s)
+ifdef PRETTY_PRINT
 	@tput setaf 1 ; echo -n "[MAKE] " ; tput sgr0 ; echo "Building library $(1)"
+endif
 	$$(MAKE) -C $$(LIBS_DIR)/$(1)
 endef
 
@@ -116,24 +120,32 @@ all: $(BUILD_DIR)/$(LIB)
 endif
 
 $(BUILD_DIR):
+ifdef PRETTY_PRINT
 	@tput setaf 1 ; echo -n "[MKDIR] " ; tput sgr0 ; echo "Creating $(BUILD_DIR)"
+endif
 	mkdir -p $(BUILD_DIR)
 
 $(foreach _LIB,$(LIBS),$(eval $(call LIB_recipe,$(_LIB))))
 
 ifdef IS_EXE
 $(BUILD_DIR)/$(EXE): $(OBJS) $(LIBS_STATIC) | $(BUILD_DIR)
+ifdef PRETTY_PRINT
 	@tput setaf 1 ; echo -n "[LD] " ; tput sgr0 ; echo "Linking objects"
+endif
 	$(LD) $(filter %.o,$^) $(LDFLAGS) -o $@
 endif
 ifdef IS_LIB
 $(BUILD_DIR)/$(LIB): $(OBJS) | $(BUILD_DIR)
+ifdef PRETTY_PRINT
 	@tput setaf 1 ; echo -n "[AR] " ; tput sgr0 ; echo "Archiving objects"
+endif
 	$(AR) $(ARFLAGS) $@ $^
 endif
 
 %.o: %.cpp
+ifdef PRETTY_PRINT
 	@tput setaf 1 ; echo -n "[CC] " ; tput sgr0 ; echo "Building sources"
+endif
 	$(CCACHE) $(CC) -o $@ -c $< $(CCFLAGS)
 
 clean:
