@@ -133,7 +133,7 @@ endif
 
 %.o: %.cpp
 	@tput setaf 1 ; echo -n "[CC] " ; tput sgr0 ; echo -n "Building sources\n"
-	$(CC) -o $@ -c $< $(CCFLAGS)
+	$(CCACHE) $(CC) -o $@ -c $< $(CCFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR)
